@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
   <defs>
-    <!-- Cyan Neon Intense Glow Multi-pass -->
     <filter id="cyanNeonGlow" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur stdDeviation="2" result="blur1" />
       <feGaussianBlur stdDeviation="6" result="blur2" />
@@ -15,64 +14,60 @@
       </feMerge>
     </filter>
 
-    <!-- Deep Ambient Radial Glow behind the Bat -->
     <radialGradient id="batAura" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stopColor="#06b6d4" stop-opacity="0.35" />
-      <stop offset="45%" stopColor="#0284c7" stop-opacity="0.15" />
-      <stop offset="85%" stopColor="#020617" stop-opacity="0" />
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.35" />
+      <stop offset="45%" stop-color="#0284c7" stop-opacity="0.15" />
+      <stop offset="85%" stop-color="#020617" stop-opacity="0" />
     </radialGradient>
 
-    <!-- Circular Medallion Background -->
     <radialGradient id="roundBase" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stopColor="#070d1a" />
-      <stop offset="60%" stopColor="#03060d" />
-      <stop offset="100%" stopColor="#000000" />
+      <stop offset="0%" stop-color="#070d1a" />
+      <stop offset="60%" stop-color="#03060d" />
+      <stop offset="100%" stop-color="#000000" />
     </radialGradient>
 
-    <!-- Outer High-Tech Cyan Ring Gradient -->
     <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#22d3ee" stop-opacity="0.85" />
-      <stop offset="50%" stopColor="#0891b2" stop-opacity="0.3" />
-      <stop offset="100%" stopColor="#38bdf8" stop-opacity="0.9" />
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.85" />
+      <stop offset="50%" stop-color="#0891b2" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.9" />
+    </linearGradient>
+
+    <linearGradient id="wingEdge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9" />
+      <stop offset="50%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#0891b2" />
     </linearGradient>
   </defs>
 
-  <!-- Outer Circular Obsidian Base (Round Look) -->
   <circle cx="200" cy="200" r="190" fill="url(#roundBase)" stroke="url(#ringGrad)" stroke-width="2.5" />
-
-  <!-- Ambient Cyan Core Glow -->
   <circle cx="200" cy="200" r="160" fill="url(#batAura)" />
 
-  <!-- Concentric High-Tech HUD Rings -->
   <circle cx="200" cy="200" r="176" fill="none" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="5 7" opacity="0.45" />
   <circle cx="200" cy="200" r="154" fill="none" stroke="#0284c7" stroke-width="0.8" opacity="0.3" />
   <circle cx="200" cy="200" r="132" fill="none" stroke="#06b6d4" stroke-width="0.5" stroke-dasharray="2 4" opacity="0.25" />
 
-  <!-- Precision Cardinal Tick Markers -->
   <line x1="200" y1="12" x2="200" y2="26" stroke="#22d3ee" stroke-width="2" />
   <line x1="200" y1="374" x2="200" y2="388" stroke="#22d3ee" stroke-width="2" />
   <line x1="12" y1="200" x2="26" y2="200" stroke="#22d3ee" stroke-width="2" />
   <line x1="374" y1="200" x2="388" y2="200" stroke="#22d3ee" stroke-width="2" />
 
-  <!-- Diagonal Sub-ticks -->
   <line x1="68" y1="68" x2="78" y2="78" stroke="#0ea5e9" stroke-width="1.2" opacity="0.5" />
   <line x1="332" y1="68" x2="322" y2="78" stroke="#0ea5e9" stroke-width="1.2" opacity="0.5" />
   <line x1="68" y1="332" x2="78" y2="322" stroke="#0ea5e9" stroke-width="1.2" opacity="0.5" />
   <line x1="332" y1="332" x2="322" y2="322" stroke="#0ea5e9" stroke-width="1.2" opacity="0.5" />
 
-  <!-- Christopher Nolan Dark Knight Bat Symbol (Exact uploaded image outline) -->
-  <g transform="translate(200, 184.6) scale(0.96)">
-    <!-- Cyan Glowing Neon Bloom -->
-    <path d="M 0,-14
-             L -4,-14 L -9,-34 L -18,-14
-             L -156,-14
-             C -142,4 -122,20 -106,24
-             C -94,14 -78,10 -64,16
-             C -48,24 -34,36 0,66
-             C 34,36 48,24 64,16
-             C 78,10 94,14 106,24
-             C 122,20 142,4 156,-14
-             L 18,-14 L 9,-34 L 4,-14 Z"
+  <!-- Apex original emblem: angular twin-blade wing mark, not a copy of any existing bat logo -->
+  <g transform="translate(200, 200) scale(1.05)">
+    <path d="M 0,-58
+             L 6,-40 L 22,-46 L 14,-24
+             L 96,-4
+             C 82,10 60,20 40,16
+             C 26,13 14,6 4,-2
+             L 0,26
+             L -4,-2
+             C -14,6 -26,13 -40,16
+             C -60,20 -82,10 -96,-4
+             L -14,-24 L -22,-46 L -6,-40 Z"
           fill="#000000"
           stroke="#00f5ff"
           stroke-width="5"
@@ -80,21 +75,22 @@
           stroke-linecap="round"
           filter="url(#cyanNeonGlow)" />
 
-    <!-- Pure Black Silhouette Core with Crisp Radiant Cyan Rim Line -->
-    <path d="M 0,-14
-             L -4,-14 L -9,-34 L -18,-14
-             L -156,-14
-             C -142,4 -122,20 -106,24
-             C -94,14 -78,10 -64,16
-             C -48,24 -34,36 0,66
-             C 34,36 48,24 64,16
-             C 78,10 94,14 106,24
-             C 122,20 142,4 156,-14
-             L 18,-14 L 9,-34 L 4,-14 Z"
+    <path d="M 0,-58
+             L 6,-40 L 22,-46 L 14,-24
+             L 96,-4
+             C 82,10 60,20 40,16
+             C 26,13 14,6 4,-2
+             L 0,26
+             L -4,-2
+             C -14,6 -26,13 -40,16
+             C -60,20 -82,10 -96,-4
+             L -14,-24 L -22,-46 L -6,-40 Z"
           fill="#020409"
-          stroke="#dcfce7"
-          stroke-width="1.6"
+          stroke="url(#wingEdge)"
+          stroke-width="1.8"
           stroke-linejoin="round"
           stroke-linecap="round" />
+
+    <path d="M 0,-58 L 0,26" stroke="#67e8f9" stroke-width="0.8" opacity="0.55" />
   </g>
 </svg>

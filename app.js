@@ -3,7 +3,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 const PERSONA = {
   reze: {
-    greet: "Hey, you made it. Sit with me a while?",
+    greet: "Hey you... I was hoping you'd come. Sit with me a while, ne?",
     voice: { prefer: ['Jenny', 'Aria', 'Zira', 'Hazel', 'Susan', 'Female'], pitch: 1.35, rate: 1.05 },
     idle: 'Here with you',
   },
@@ -235,32 +235,105 @@ async function speak(persona, text, test = false) {
   const a = new Audio(url); audioEl = a;
   a.onplay = () => setState('speaking');
   a.onended = a.onerror = () => { URL.revokeObjectURL(url); if (audioEl === a) audioEl = null; setState('idle'); };
-  a.play().catch(() => setState('idle'));
+  a.play().catch((e) => { setState('idle'); if (test) addMsg(persona, 'err', 'Could not play the voice (' + (e && e.message || 'blocked') + ').'); else speakLocal(persona, text); });
 }
 $$('[data-testvoice]').forEach((b) => b.addEventListener('click', () => speak(b.dataset.testvoice, '', true)));
 
 /* ---------- voice in ---------- */
-// Electron's Chromium usually can't reach Google's cloud speech service, so this may fail.
-// The planned offline replacement is a local Whisper module.
-let rec = null;
-function toggleMic(persona, input, btn) {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return addMsg(persona, 'err', 'Voice input needs the offline Whisper module, which is the next step.');
-  if (rec) { rec.stop(); return; }
-  rec = new SR(); rec.lang = 'en-US'; rec.interimResults = true;
-  btn.classList.add('live'); setState('listening');
-  const live = $('[data-live]');
-  rec.onresult = (e) => {
-    const t = [...e.results].map((r) => r[0].transcript).join('');
-    input.value = t; if (live) live.textContent = t;
-    if (e.results[e.results.length - 1].isFinal) { input.value = ''; send(persona, t); }
-  };
-  rec.onerror = (e) => addMsg(persona, 'err', e.error === 'network'
-    ? 'Speech service unreachable. Voice input will work once the offline Whisper module is added.'
-    : `Mic error: ${e.error}`);
-  rec.onend = () => { btn.classList.remove('live'); rec = null; if (live) live.textContent = 'Mic is idle'; if (!state.busy) setState('idle'); };
-  rec.start();
+// Records from the mic (works in Electron), shows a live sound wave, then Gemini turns it into text.
+let mic = null;
+const activeBar = () => $('.view:not([hidden]) [data-voicebar]');
+
+function drawVoice(m) {
+  const c = m.canvas, g = c.getContext('2d');
+  const w = c.clientWidth, h = c.clientHeight, dpr = window.devicePixelRatio || 1;
+  if (!w || !h) return 0;
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  m.an.getByteFrequencyData(m.freq);
+  const n = 44, gap = 3, bw = Math.max(2, (w - gap * (n - 1)) / n);
+  const col = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#8a6bff';
+  let sum = 0;
+  for (let i = 0; i < n; i++) {
+    const d = Math.abs(i - (n - 1) / 2) / ((n - 1) / 2); // low frequencies in the middle
+    const v = m.freq[Math.floor(d * m.freq.length * 0.55)] / 255;
+    sum += v;
+    const bh = Math.max(3, v * h * 0.95);
+    g.globalAlpha = 0.35 + v * 0.65; g.fillStyle = col;
+    g.beginPath(); (g.roundRect ? g.roundRect(i * (bw + gap), (h - bh) / 2, bw, bh, bw / 2) : g.rect(i * (bw + gap), (h - bh) / 2, bw, bh)); g.fill();
+  }
+  const lvl = sum / n;
+  document.body.style.setProperty('--lvl', Math.min(1, lvl * 2.4).toFixed(2));
+  return lvl;
 }
+
+function stopMic(send) {
+  if (!mic) return;
+  mic.send = send;
+  try { mic.mr.stop(); } catch (_) { cleanupMic(); }
+}
+function cleanupMic() {
+  if (!mic) return;
+  cancelAnimationFrame(mic.raf);
+  mic.stream.getTracks().forEach((t) => t.stop());
+  try { mic.ctx.close(); } catch (_) {}
+  mic.btn.classList.remove('live');
+  if (mic.bar) mic.bar.hidden = true;
+  document.body.style.setProperty('--lvl', '0');
+  const live = $('[data-live]'); if (live) live.textContent = 'Mic is idle';
+}
+
+async function toggleMic(persona, input, btn) {
+  if (mic) return stopMic(true);
+  if (state.busy) return;
+  if (!navigator.mediaDevices || !window.MediaRecorder) return addMsg(persona, 'err', 'This system cannot record audio.');
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { return addMsg(persona, 'err', 'Microphone blocked. In Windows go to Settings > Privacy > Microphone and allow desktop apps, then try again.'); }
+
+  stopSpeaking();
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const an = ctx.createAnalyser(); an.fftSize = 256; an.smoothingTimeConstant = 0.72;
+  ctx.createMediaStreamSource(stream).connect(an);
+  const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+  const mr = new MediaRecorder(stream, { mimeType: mime });
+  const chunks = [];
+  mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+  const bar = activeBar();
+  mic = { persona, btn, stream, ctx, an, mr, bar, canvas: $('canvas', bar), freq: new Uint8Array(an.frequencyBinCount), raf: 0, send: true, t0: Date.now(), heard: false, lastVoice: Date.now() };
+  const m = mic;
+  const text = $('[data-vbtext]', bar);
+
+  mr.onstop = async () => {
+    const send = m.send, dur = Date.now() - m.t0;
+    cleanupMic(); mic = null;
+    if (!send || !chunks.length || dur < 500) { setState('idle'); return; }
+    setState('thinking');
+    const live = $('[data-live]'); if (live) live.textContent = 'Transcribing...';
+    const buf = await new Blob(chunks, { type: 'audio/webm' }).arrayBuffer();
+    const r = await window.apex.transcribe(buf, 'audio/webm');
+    if (live) live.textContent = 'Mic is idle';
+    if (r.error) { addMsg(persona, 'err', 'Voice input needs a working Gemini key (it turns speech into text). ' + r.error); return setState('idle'); }
+    if (!r.text) { addMsg(persona, 'sys', 'I did not catch that. Try again a little closer to the mic.'); return setState('idle'); }
+    send_(persona, r.text);
+  };
+
+  bar.hidden = false; btn.classList.add('live'); setState('listening');
+  const live = $('[data-live]'); if (live) live.textContent = 'Listening...';
+  text.textContent = 'Listening... pause when you are done, or tap the mic to send';
+  mr.start();
+  (function loop() {
+    if (mic !== m) return;
+    const lvl = drawVoice(m), now = Date.now();
+    if (lvl > 0.05) { m.heard = true; m.lastVoice = now; }
+    if (m.heard && now - m.lastVoice > 1800) return stopMic(true);   // you stopped talking
+    if (!m.heard && now - m.t0 > 9000) return stopMic(false);         // nothing said
+    if (now - m.t0 > 45000) return stopMic(true);
+    m.raf = requestAnimationFrame(loop);
+  })();
+}
+const send_ = (p, t) => send(p, t);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && mic) { stopMic(false); e.stopPropagation(); } }, true);
 
 /* ---------- custom images (your own Reze / logo art) ---------- */
 function applyImg(who, url) {
@@ -324,3 +397,64 @@ $$('.mind-wrap').forEach((w) => {
   w.addEventListener('mouseleave', () => { w.style.setProperty('--ry', '0deg'); w.style.setProperty('--rx', '0deg'); });
 });
 $('#hub').classList.add('enter');
+
+
+/* ---------- hand-scribbled Reze doodles (short phrases inspired by the series) ---------- */
+// [text, left%, top%, rotation deg, font px]
+const SCRIB = {
+  hub: [['Bang!', 4, 5, -9, 22], ['Denji \u2661', 66, 8, 8, 19], ['boom.', 2, 60, -12, 20], ['night school \u263e', 40, 92, -3, 15], ['just us two', 68, 70, 9, 16]],
+  chat: [['Bang!', 3, 14, -10, 26], ['Denji \u2661', 84, 12, 8, 22], ['boom.', 5, 44, -8, 22], ['run away with me?', 78, 40, 6, 17],
+         ['night school \u263e', 4, 74, -5, 17], ['bomb girl', 82, 68, 9, 20], ['stay a little longer', 70, 88, -4, 15], ['ne, ne...', 9, 90, 6, 16]],
+};
+$$('[data-scribbles]').forEach((box) => {
+  (SCRIB[box.dataset.scribbles] || []).forEach(([t, l, tp, r, fs], i) => {
+    const el = document.createElement('span');
+    el.textContent = t;
+    el.style.cssText = `left:${l}%;top:${tp}%;--r:${r}deg;--fs:${fs}px;--dl:${(0.5 + i * 0.45).toFixed(2)}s`;
+    box.appendChild(el);
+  });
+});
+
+/* ---------- chat history ---------- */
+const histModal = $('#history'); let histFor = 'reze';
+const fmtTime = (ts) => new Date(ts).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+async function renderHistory() {
+  const list = await window.apex.historyList(histFor), box = $('#histList');
+  box.innerHTML = '';
+  if (!list.length) { box.innerHTML = '<p class="hint">No saved chats yet. Start talking and they will show up here.</p>'; return; }
+  list.forEach((it) => {
+    const row = document.createElement('div'); row.className = 'hist-row' + (it.active ? ' active' : '');
+    const open = document.createElement('button'); open.className = 'hist-open';
+    open.innerHTML = '<b></b><small></small>';
+    $('b', open).textContent = it.title || 'Chat';
+    $('small', open).textContent = fmtTime(it.ts) + ' \u00b7 ' + it.count + ' messages';
+    open.addEventListener('click', () => openSession(it.id));
+    const del = document.createElement('button'); del.className = 'hist-del'; del.title = 'Delete this chat'; del.setAttribute('aria-label', 'Delete this chat'); del.innerHTML = '&times;';
+    del.addEventListener('click', async () => {
+      const r = await window.apex.historyDelete(histFor, it.id);
+      if (r.wasCurrent) resetLog(histFor);
+      renderHistory();
+    });
+    row.append(open, del); box.appendChild(row);
+  });
+}
+function resetLog(p) { $(`[data-log="${p}"]`).innerHTML = ''; state.counts[p] = 0; updateCount(); addMsg(p, 'ai', PERSONA[p].greet); }
+async function openSession(id) {
+  const r = await window.apex.historyOpen(histFor, id);
+  if (r.error) return;
+  $(`[data-log="${histFor}"]`).innerHTML = ''; state.counts[histFor] = 0;
+  r.messages.forEach((m) => addMsg(histFor, m.role === 'user' ? 'user' : 'ai', m.content));
+  updateCount(); histModal.hidden = true;
+}
+$$('[data-history]').forEach((b) => b.addEventListener('click', async () => {
+  histFor = b.dataset.history;
+  $('#histTitle').textContent = (histFor === 'reze' ? 'Reze' : 'Alfred') + ' \u00b7 History';
+  await renderHistory(); histModal.hidden = false;
+}));
+$('[data-close-history]').addEventListener('click', () => (histModal.hidden = true));
+histModal.addEventListener('click', (e) => { if (e.target === histModal) histModal.hidden = true; });
+$('#histClear').addEventListener('click', async () => { await window.apex.historyClear(histFor); resetLog(histFor); renderHistory(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !histModal.hidden) { histModal.hidden = true; e.stopPropagation(); } }, true);
+
+/* ---------- first run: guide to Settings if nothing is set up ---------- */
+refreshEngine().then((st) => { if (!st.hasKey && !(st.local.online && st.local.modelReady)) openSettings(); });

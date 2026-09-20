@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, safeStorage, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, safeStorage, shell, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
@@ -12,15 +12,33 @@ function pickLocal() {
   if (settings.localModel && installed.includes(settings.localModel)) return settings.localModel;
   return installed.find((n) => /qwen.*3b/i.test(n)) || installed.find((n) => /qwen/i.test(n)) || installed[0] || '';
 }
-const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite'];
+const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
 
 /* ---------------- settings (saved on this PC only) ---------------- */
 // The Gemini key is encrypted with Windows' own protection (DPAPI via Electron safeStorage)
 // and lives in %APPDATA%\Apex AI\settings.json. It is never sent anywhere except Google.
-const defaults = { engine: 'local', geminiModel: GEMINI_MODELS[0], keyEnc: '', keyPlain: false, localModel: '', rezeVoice: 'en-US-AriaNeural', alfredVoice: 'en-GB-RyanNeural' };
+const defaults = { engine: 'local', geminiModel: GEMINI_MODELS[0], keyEnc: '', keyPlain: false, localModel: '', rezeVoice: 'en-US-AriaNeural|+8Hz|+4%', alfredVoice: 'en-GB-RyanNeural|-6Hz|+2%' };
+// Voice id format: "voiceName|pitch|rate". Pitch/rate presets give the anime-style flavour.
 const VOICES = {
-  reze: [['en-US-AriaNeural', 'Aria (warm, natural)'], ['en-US-JennyNeural', 'Jenny (friendly)'], ['en-US-MichelleNeural', 'Michelle (soft)'], ['en-GB-SoniaNeural', 'Sonia (British)'], ['en-US-AnaNeural', 'Ana (child voice)']],
-  alfred: [['en-GB-RyanNeural', 'Ryan (British)'], ['en-GB-ThomasNeural', 'Thomas (British)'], ['en-US-ChristopherNeural', 'Christopher (US)'], ['en-US-GuyNeural', 'Guy (US)']],
+  reze: [
+    ['en-US-AriaNeural|+8Hz|+4%', 'Aria \u00b7 soft anime'],
+    ['en-US-JennyNeural|+10Hz|+6%', 'Jenny \u00b7 bright anime'],
+    ['en-US-MichelleNeural|+6Hz|+2%', 'Michelle \u00b7 sweet'],
+    ['ja-JP-NanamiNeural', 'Nanami \u00b7 Japanese anime'],
+    ['ja-JP-NanamiNeural|+6Hz|-4%', 'Nanami \u00b7 gentle, slow'],
+    ['en-US-AnaNeural|+4Hz', 'Ana \u00b7 youthful'],
+    ['en-GB-SoniaNeural|+6Hz', 'Sonia \u00b7 British soft'],
+    ['en-US-AriaNeural', 'Aria \u00b7 natural'],
+  ],
+  alfred: [
+    ['en-GB-RyanNeural|-6Hz|+2%', 'Ryan \u00b7 deep operator'],
+    ['en-GB-RyanNeural', 'Ryan \u00b7 British'],
+    ['ja-JP-KeitaNeural', 'Keita \u00b7 Japanese anime'],
+    ['ja-JP-KeitaNeural|-6Hz|+3%', 'Keita \u00b7 low, commanding'],
+    ['en-GB-ThomasNeural', 'Thomas \u00b7 British'],
+    ['en-US-ChristopherNeural|-4Hz', 'Christopher \u00b7 deep US'],
+    ['en-US-GuyNeural', 'Guy \u00b7 US'],
+  ],
 };
 let settings = { ...defaults };
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
@@ -66,6 +84,31 @@ function loadApps() {
 }
 
 const histories = { reze: [], alfred: [] };
+
+/* ---------------- saved chat history (this PC only) ---------------- */
+const historyFile = () => path.join(app.getPath('userData'), 'history.json');
+let store = { reze: [], alfred: [] };
+const current = { reze: null, alfred: null };
+function loadHistory() {
+  try { const j = JSON.parse(fs.readFileSync(historyFile(), 'utf8')); store = { reze: j.reze || [], alfred: j.alfred || [] }; } catch (_) {}
+}
+function saveHistory() {
+  try { fs.mkdirSync(path.dirname(historyFile()), { recursive: true }); fs.writeFileSync(historyFile(), JSON.stringify(store)); } catch (_) {}
+}
+function saveSession(persona) {
+  const msgs = histories[persona];
+  if (!msgs.length) return;
+  let s = current[persona] && store[persona].find((x) => x.id === current[persona]);
+  if (!s) {
+    s = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: '', ts: Date.now(), messages: [] };
+    current[persona] = s.id; store[persona].unshift(s);
+  }
+  s.messages = msgs.map((m) => ({ role: m.role, content: m.content }));
+  s.title = String((msgs.find((m) => m.role === 'user') || {}).content || 'New chat').slice(0, 48);
+  s.ts = Date.now();
+  store[persona] = store[persona].sort((a, b) => b.ts - a.ts).slice(0, 60);
+  saveHistory();
+}
 
 // Hide the leading JSON action line from the visible reply while streaming.
 function visible(raw) {
@@ -116,20 +159,31 @@ async function streamLocal(p, msgs, onText) {
   });
 }
 
-async function streamGemini(p, msgs, onText) {
+// Tries your chosen model first, then the others if it is missing / busy / out of quota.
+async function geminiCall(kind, body) {
   const key = getKey();
   if (!key) throw new Error('No Gemini key saved yet. Open Settings and paste your key.');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.geminiModel)}:streamGenerateContent?alt=sse`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: p.prompt }] },
-      contents: msgs.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-      generationConfig: { temperature: p.temperature },
-    }),
+  const order = [settings.geminiModel, ...GEMINI_MODELS.filter((m) => m !== settings.geminiModel)];
+  let last = '';
+  for (const m of order) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:${kind}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return res;
+    last = await geminiError(res, m);
+    if (![404, 429, 503].includes(res.status)) throw new Error(last);
+  }
+  throw new Error(last);
+}
+
+async function streamGemini(p, msgs, onText) {
+  const res = await geminiCall('streamGenerateContent?alt=sse', {
+    systemInstruction: { parts: [{ text: p.prompt }] },
+    contents: msgs.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+    generationConfig: { temperature: p.temperature },
   });
-  if (!res.ok) throw new Error(await geminiError(res));
   await readLines(res, (line) => {
     if (!line.startsWith('data:')) return;
     try {
@@ -140,14 +194,14 @@ async function streamGemini(p, msgs, onText) {
   });
 }
 
-async function geminiError(res) {
+async function geminiError(res, model) {
   let msg = '';
   try { msg = (await res.json()).error.message || ''; } catch (_) {}
   if (res.status === 400 && /api key/i.test(msg)) return 'Google rejected the Gemini key. Re-copy it from aistudio.google.com/apikey and paste it again in Settings.';
-  if (res.status === 401 || res.status === 403) return 'Google refused this key (' + res.status + '). Check the key in Settings, or make a new one.';
-  if (res.status === 404) return `Gemini model "${settings.geminiModel}" isn't available to this key. Pick another Gemini model in Settings.`;
-  if (res.status === 429) return 'Gemini free limit reached for now. Wait a minute, or pick a lighter Gemini model in Settings.';
-  return `Gemini error ${res.status}${msg ? ': ' + msg.slice(0, 140) : ''}`;
+  if (res.status === 401 || res.status === 403) return 'Google refused this key (' + res.status + (msg ? ': ' + msg.slice(0, 120) : '') + '). Check the key in Settings, or make a new one.';
+  if (res.status === 404) return `Gemini model "${model}" isn't available to this key.`;
+  if (res.status === 429) return 'Gemini free limit reached for now. Wait a minute and try again.';
+  return `Gemini error ${res.status}${msg ? ': ' + msg.slice(0, 160) : ''}`;
 }
 
 async function readLines(res, onLine) {
@@ -179,6 +233,7 @@ async function streamChat(sender, persona, userText) {
   else await streamLocal(p, msgs, onText);
   if (!raw.trim()) throw new Error('The model sent back an empty reply. Try again.');
   hist.push({ role: 'assistant', content: raw });
+  saveSession(persona);
   const action = persona === 'alfred' ? runAction(raw) : null;
   return { reply: visible(raw), action };
 }
@@ -199,15 +254,15 @@ ipcMain.handle('chat:send', async (e, { persona, text }) => {
 
 /* ---------------- voice ---------------- */
 // Neural voices via Microsoft Edge TTS (same service as the Python edge-tts package). Needs internet.
-async function synth(voice, text) {
+async function synthOnce(voice, text, opts) {
   const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
   const tts = new MsEdgeTTS();
   await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-  const r = tts.toStream(text);
+  const r = Object.keys(opts).length ? tts.toStream(text, opts) : tts.toStream(text);
   const stream = r && r.audioStream ? r.audioStream : r;
   const chunks = [];
   await new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error('TTS timeout')), 15000);
+    const t = setTimeout(() => reject(new Error('TTS timeout')), 10000);
     const done = () => { clearTimeout(t); resolve(); };
     stream.on('data', (c) => chunks.push(c));
     stream.on('end', done); stream.on('close', done);
@@ -218,6 +273,16 @@ async function synth(voice, text) {
   if (!buf.length) throw new Error('empty audio');
   return buf;
 }
+// "voice|pitch|rate" -> tries the styled version, then the plain voice, then a safe English voice.
+async function synth(id, text) {
+  const [voice, pitch, rate] = String(id).split('|');
+  const opts = {}; if (pitch) opts.pitch = pitch; if (rate) opts.rate = rate;
+  try { return await synthOnce(voice, text, opts); }
+  catch (_) {
+    try { return await synthOnce(voice, text, {}); }
+    catch (e2) { if (!/^en-/.test(voice)) return await synthOnce('en-US-AriaNeural', text, {}); throw e2; }
+  }
+}
 ipcMain.handle('tts:speak', async (_e, { persona, text, test }) => {
   const p = PERSONAS[persona];
   const voice = settings[persona + 'Voice'] || p.voice;
@@ -225,7 +290,41 @@ ipcMain.handle('tts:speak', async (_e, { persona, text, test }) => {
   catch (err) { return { error: err.message }; }
 });
 
-ipcMain.handle('chat:reset', (_e, persona) => { histories[persona] = []; return true; });
+ipcMain.handle('chat:reset', (_e, persona) => { histories[persona] = []; current[persona] = null; return true; });
+
+ipcMain.handle('history:list', (_e, persona) => (store[persona] || []).map((s) => ({ id: s.id, title: s.title, ts: s.ts, count: s.messages.length, active: s.id === current[persona] })));
+ipcMain.handle('history:open', (_e, { persona, id }) => {
+  const s = (store[persona] || []).find((x) => x.id === id);
+  if (!s) return { error: 'That chat no longer exists.' };
+  histories[persona] = s.messages.map((m) => ({ role: m.role, content: m.content }));
+  current[persona] = s.id;
+  return { messages: s.messages.map((m) => ({ role: m.role, content: m.role === 'assistant' ? visible(m.content) : m.content })).filter((m) => m.content) };
+});
+ipcMain.handle('history:delete', (_e, { persona, id }) => {
+  store[persona] = (store[persona] || []).filter((x) => x.id !== id);
+  const wasCurrent = current[persona] === id;
+  if (wasCurrent) { current[persona] = null; histories[persona] = []; }
+  saveHistory();
+  return { wasCurrent };
+});
+ipcMain.handle('history:clear', (_e, persona) => { store[persona] = []; current[persona] = null; histories[persona] = []; saveHistory(); return true; });
+
+/* ---------------- mic: speech to text via Gemini (works in Electron, unlike Chrome's built-in) ---------------- */
+ipcMain.handle('stt:transcribe', async (_e, { audio, mime }) => {
+  try {
+    const data = Buffer.from(audio).toString('base64');
+    const res = await geminiCall('generateContent', {
+      contents: [{ role: 'user', parts: [
+        { text: 'Transcribe the speech in this audio exactly as spoken. Output only the transcript text. If there is no clear speech, output nothing.' },
+        { inlineData: { mimeType: mime || 'audio/webm', data } },
+      ] }],
+      generationConfig: { temperature: 0 },
+    });
+    const j = await res.json();
+    const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+    return { text: parts.filter((p) => p.text && !p.thought).map((p) => p.text).join('').trim() };
+  } catch (err) { return { error: String(err.message || err) }; }
+});
 
 /* ---------------- status + settings IPC ---------------- */
 async function localStatus() {
@@ -238,7 +337,7 @@ async function localStatus() {
   } catch (_) { installed = []; return { online: false, models: [], model: '', modelReady: false }; }
 }
 function publicSettings() {
-  return { engine: settings.engine, geminiModel: settings.geminiModel, geminiModels: GEMINI_MODELS, hasKey: Boolean(getKey()), localModel: settings.localModel, voices: VOICES, rezeVoice: settings.rezeVoice, alfredVoice: settings.alfredVoice };
+  return { engine: settings.engine, geminiModel: settings.geminiModel, geminiModels: GEMINI_MODELS, hasKey: Boolean(getKey()), hasOwnKey: hasOwnKey(), usingBuiltinKey: !hasOwnKey() && Boolean(builtinKey()), localModel: settings.localModel, voices: VOICES, rezeVoice: settings.rezeVoice, alfredVoice: settings.alfredVoice };
 }
 ipcMain.handle('engine:status', async () => ({ ...publicSettings(), local: await localStatus() }));
 ipcMain.handle('settings:get', () => publicSettings());
@@ -304,5 +403,12 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'index.html'));
 }
 
-app.whenReady().then(() => { loadSettings(); createWindow(); ensureOllama(); });
+app.whenReady().then(() => {
+  loadSettings(); loadHistory();
+  // allow the microphone (needed for voice input)
+  const okPerm = (p) => p === 'media' || p === 'audioCapture';
+  session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(okPerm(perm)));
+  session.defaultSession.setPermissionCheckHandler((_wc, perm) => okPerm(perm));
+  createWindow(); ensureOllama();
+});
 app.on('window-all-closed', () => app.quit());

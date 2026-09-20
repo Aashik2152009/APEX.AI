@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; media-src 'self' blob: data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Apex AI</title>
 <link rel="stylesheet" href="styles.css">
@@ -41,13 +41,9 @@
         <span class="glyph">レ</span>
       </div>
       <div class="plate"><span class="dot"></span><div><strong>Reze</strong><small>Talk. Explore. Feel.</small></div><span class="chev">›</span></div>
-    </button><button class="setimg" data-setimg="reze">Change image</button></div>
+    </button><div class="scribbles hub" data-scribbles="hub" aria-hidden="true"></div><button class="setimg" data-setimg="reze">Change image</button></div>
 
-    <svg class="core" viewBox="0 0 120 120" aria-hidden="true">
-      <polyline points="22,30 60,92 60,44" />
-      <polyline points="98,30 60,92 60,44" />
-      <circle cx="60" cy="60" r="54" />
-    </svg>
+    <div class="core" aria-hidden="true"><span class="o o1"></span><span class="o o2"></span><span class="spark"></span></div>
 
     <div class="mind-wrap"><button class="mind mind-alfred" data-go="alfred" aria-label="Open Alfred">
       <div class="portrait" data-img="alfred">
@@ -69,6 +65,7 @@
 <!-- REZE -->
 <section id="reze" class="view" hidden>
   <div class="petals" data-petals aria-hidden="true"></div>
+  <div class="scribbles chat" data-scribbles="chat" aria-hidden="true"></div>
   <header class="bar">
     <button class="back" data-go="hub">‹ Hub</button>
     <span class="mark">REZE <em>AI</em></span>
@@ -86,15 +83,16 @@
     <h2>Reze</h2>
     <p class="jp">レゼ</p>
     <p class="status" data-status>Here with you</p>
-    <button class="link" data-setimg="reze">Change image</button> <button class="link" data-testvoice="reze">Test voice</button>
+    <div class="links"><button class="link" data-setimg="reze">Change image</button><button class="link" data-testvoice="reze">Test voice</button><button class="link" data-history="reze">History</button><button class="link" data-reset="reze">New chat</button></div>
   </div>
 
   <div class="log" data-log="reze"></div>
 
+  <div class="voicebar" data-voicebar hidden><canvas></canvas><span data-vbtext>Listening... tap the mic to send</span></div>
   <form class="composer" data-composer="reze" autocomplete="off">
     <button type="button" class="ic" data-voice title="Voice replies on/off" aria-label="Toggle voice replies">♪</button>
     <input type="text" placeholder="Message Reze..." aria-label="Message Reze">
-    <button type="button" class="ic" data-mic title="Speak" aria-label="Speak">●</button>
+    <button type="button" class="ic" data-mic title="Speak" aria-label="Speak"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12z"/></svg></button>
     <button type="submit" class="ic go" aria-label="Send">➤</button>
   </form>
   <p class="foot-note">Good conversations can be dangerous.</p>
@@ -112,7 +110,7 @@
 
   <div class="a-grid">
     <aside class="side glass">
-      <div class="side-block"><h3>Session</h3><p data-count>0 messages</p><button class="link" data-reset="alfred">Clear session</button><br><button class="link" data-setimg="alfred">Change logo image</button><br><button class="link" data-testvoice="alfred">Test voice</button></div>
+      <div class="side-block"><h3>Session</h3><p data-count>0 messages</p><button class="link" data-reset="alfred">Clear session</button><br><button class="link" data-setimg="alfred">Change logo image</button><br><button class="link" data-testvoice="alfred">Test voice</button><br><button class="link" data-history="alfred">Chat history</button></div>
       <div class="side-block"><h3>Recent tools run</h3><ul data-tools><li class="dim">Nothing launched yet</li></ul></div>
       <div class="side-block"><h3>Live speech</h3><p data-live class="dim">Mic is idle</p></div>
       <blockquote>“Master Bruce, I’m here.”<cite>— Alfred</cite></blockquote>
@@ -134,11 +132,12 @@
     </aside>
   </div>
 
+  <div class="voicebar" data-voicebar hidden><canvas></canvas><span data-vbtext>Listening... tap the mic to send</span></div>
   <form class="composer" data-composer="alfred" autocomplete="off">
     <span class="prompt">&gt;_</span>
     <input type="text" placeholder="Type a command or ask Alfred..." aria-label="Message Alfred">
     <button type="button" class="ic" data-voice title="Voice replies on/off" aria-label="Toggle voice replies">♪</button>
-    <button type="button" class="ic mic" data-mic title="Speak" aria-label="Speak">●</button>
+    <button type="button" class="ic mic" data-mic title="Speak" aria-label="Speak"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12z"/></svg></button>
   </form>
 </section>
 
@@ -150,7 +149,7 @@
 
     <section>
       <h4>Cloud &middot; Gemini</h4>
-      <p class="hint">Free key from Google. Paste it once; it is stored encrypted on this PC only.</p>
+      <p class="hint">Use your own free Google key. Paste it once; it is stored encrypted on this PC only. It also powers the microphone.</p>
       <div class="row"><input type="password" id="keyInput" placeholder="Paste Gemini API key" autocomplete="off" spellcheck="false"><button class="btn" id="keySave">Save</button></div>
       <div class="row">
         <select id="modelSel" aria-label="Gemini model"></select>
@@ -163,7 +162,7 @@
 
     <section>
       <h4>Voices</h4>
-      <p class="hint">Neural voices (needs internet). Pick one and press Test.</p>
+      <p class="hint">Neural voices (needs internet). Try the anime-style presets, then press Test.</p>
       <div class="row"><label class="lab">Reze</label><select id="rezeVoice"></select><button class="btn ghost" data-vtest="reze">Test</button></div>
       <div class="row"><label class="lab">Alfred</label><select id="alfredVoice"></select><button class="btn ghost" data-vtest="alfred">Test</button></div>
     </section>
@@ -176,6 +175,14 @@
       <div class="bar-prog" id="prog" hidden><i></i></div>
       <p class="msgline" id="pullMsg"></p>
     </section>
+  </div>
+</div>
+
+<div class="modal" id="history" hidden>
+  <div class="sheet glass" role="dialog" aria-label="Chat history">
+    <header><h3 id="histTitle">History</h3><button class="x" data-close-history aria-label="Close">&times;</button></header>
+    <div id="histList" class="hist-list"></div>
+    <div class="row"><button class="btn ghost" id="histClear">Delete all</button></div>
   </div>
 </div>
 

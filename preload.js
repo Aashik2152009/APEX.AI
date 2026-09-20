@@ -14,6 +14,11 @@ contextBridge.exposeInMainWorld('apex', {
   testGemini: () => inv('gemini:test'),
   pullLocal: () => inv('local:pull'),
   openLink: (w) => inv('open:link', w),
+  transcribe: (audio, mime) => inv('stt:transcribe', { audio, mime }),
+  historyList: (persona) => inv('history:list', persona),
+  historyOpen: (persona, id) => inv('history:open', { persona, id }),
+  historyDelete: (persona, id) => inv('history:delete', { persona, id }),
+  historyClear: (persona) => inv('history:clear', persona),
   onChunk: (cb) => ipcRenderer.on('chat:chunk', (_e, d) => cb(d)),
   onPull: (cb) => ipcRenderer.on('local:progress', (_e, d) => cb(d)),
 });
