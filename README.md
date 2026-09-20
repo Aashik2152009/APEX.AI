@@ -1,10 +1,7 @@
 # Apex AI: setup in 4 steps (no commands)
 
 ## 1. Get the installer (once, about 10 minutes)
-1. Make a free account at github.com. Click **+ > New repository**, name it apex-ai, choose **Private**, Create.
-2. Click **uploading an existing file**. Unzip this project first, then drag EVERYTHING inside it into the page (including the `.github` folder). Click **Commit changes**.
-3. Open the **Actions** tab. Wait about 4 minutes until "Build Windows installer" shows a green tick.
-4. Click that run, scroll to **Artifacts**, download **ApexAI-Windows-Installer**, unzip it.
+get the file 
 
 ## 2. Install
 Double-click `ApexAI-Setup-1.0.0.exe`. If Windows says "protected your PC" (the app is unsigned): **More info > Run anyway**. It installs in one click and puts a shortcut on your desktop.
