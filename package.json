@@ -24,7 +24,11 @@
       "main.js",
       "preload.js",
       "personas.js",
-      "renderer/**/*",
+      "index.html",
+      "app.js",
+      "styles.css",
+      "alfred.svg",
+      "reze.jpg",
       "package.json"
     ],
     "win": {

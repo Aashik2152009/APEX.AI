@@ -301,7 +301,7 @@ function createWindow() {
     backgroundColor: '#05050d', autoHideMenuBar: true, title: 'Apex AI',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   });
-  win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  win.loadFile(path.join(__dirname, 'index.html'));
 }
 
 app.whenReady().then(() => { loadSettings(); createWindow(); ensureOllama(); });

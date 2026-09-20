@@ -290,7 +290,7 @@ picker.addEventListener('change', () => {
   };
   fr.readAsDataURL(f);
 });
-['reze', 'alfred'].forEach((w) => { let u = null; try { u = localStorage.getItem('apex.img.' + w); } catch (_) {} if (u) applyImg(w, u); else ['jpg', 'png', 'svg'].forEach((x) => applyImg(w, `assets/${w}.${x}`)); });
+['reze', 'alfred'].forEach((w) => { let u = null; try { u = localStorage.getItem('apex.img.' + w); } catch (_) {} if (u) applyImg(w, u); else ['jpg', 'png', 'svg'].forEach((x) => applyImg(w, `${w}.${x}`)); });
 
 /* ---------- decoration ---------- */
 const wave = $('[data-wave]');
