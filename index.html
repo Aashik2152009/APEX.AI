@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apex AI</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-view="hub" data-state="idle">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a9ccff"/><stop offset=".5" stop-color="#3d72d6"/><stop offset="1" stop-color="#132a57"/>
+    </linearGradient>
+    <symbol id="wing" viewBox="0 0 200 100">
+      <path d="M100 8 L107 24 L116 24 L121 13 L126 30 Q152 26 196 40 Q170 46 160 62 Q148 52 136 60 Q126 54 118 72 L110 62 L100 94 L90 62 L82 72 Q74 54 64 60 Q52 52 40 62 Q30 46 4 40 Q48 26 74 30 L79 13 L84 24 L93 24 Z" fill="url(#metal)" stroke="#cfe4ff" stroke-width="1.2" stroke-linejoin="round"/>
+      <g fill="none" stroke="#08162f" stroke-opacity=".6" stroke-width="1" stroke-linejoin="round">
+        <path d="M100 30 L126 34 L150 38 L184 42"/><path d="M100 30 L74 34 L50 38 L16 42"/>
+        <path d="M126 34 L136 57 M150 38 L158 54 M74 34 L64 57 M50 38 L42 54"/>
+        <path d="M100 34 L100 84"/><path d="M93 24 L100 34 L107 24"/>
+      </g>
+      <path d="M100 40 L106 50 L100 60 L94 50 Z" fill="#dff0ff"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- HUB -->
+<section id="hub" class="view">
+  <header class="hub-top">
+    <span class="mark">//&nbsp;APEX&nbsp;AI</span>
+    <span class="hub-sub">Two minds. One engine.</span>
+    <span class="pill" data-engine title="Click to switch engine"><i></i><b>checking</b></span>
+    <button class="gear" data-open-settings aria-label="Settings" title="Settings">&#9881;</button>
+  </header>
+
+  <div class="hub-stage">
+    <div class="mind-wrap"><button class="mind mind-reze" data-go="reze" aria-label="Open Reze">
+      <div class="portrait" data-img="reze">
+        <span class="glyph">レ</span>
+      </div>
+      <div class="plate"><span class="dot"></span><div><strong>Reze</strong><small>Talk. Explore. Feel.</small></div><span class="chev">›</span></div>
+    </button><button class="setimg" data-setimg="reze">Change image</button></div>
+
+    <svg class="core" viewBox="0 0 120 120" aria-hidden="true">
+      <polyline points="22,30 60,92 60,44" />
+      <polyline points="98,30 60,92 60,44" />
+      <circle cx="60" cy="60" r="54" />
+    </svg>
+
+    <div class="mind-wrap"><button class="mind mind-alfred" data-go="alfred" aria-label="Open Alfred">
+      <div class="portrait" data-img="alfred">
+        <svg class="emblem"><use href="#wing"/></svg>
+      </div>
+      <div class="plate"><div><strong>Alfred</strong><small>Plan. Execute. Win.</small></div><svg class="mini"><use href="#wing"/></svg><span class="chev">›</span></div>
+    </button><button class="setimg" data-setimg="alfred">Change image</button></div>
+  </div>
+
+  <footer class="hub-foot">
+    <div class="switch" role="group" aria-label="AI model">
+      <button data-engine-pick="local"><span>LOCAL</span><b>Qwen 2.5 &middot; 3B</b></button>
+      <button data-engine-pick="gemini"><span>CLOUD</span><b>Gemini</b></button>
+    </div>
+    <p data-engine-note></p>
+  </footer>
+</section>
+
+<!-- REZE -->
+<section id="reze" class="view" hidden>
+  <div class="petals" data-petals aria-hidden="true"></div>
+  <header class="bar">
+    <button class="back" data-go="hub">‹ Hub</button>
+    <span class="mark">REZE <em>AI</em></span>
+    <span class="pill" data-engine title="Click to switch engine"><i></i><b>checking</b></span>
+    <button class="gear" data-open-settings aria-label="Settings">&#9881;</button>
+  </header>
+
+  <div class="stage">
+    <div class="orbit">
+      <span class="ring r1"></span><span class="ring r2"></span>
+      <div class="avatar" data-img="reze">
+        <span class="glyph">レ</span>
+      </div>
+    </div>
+    <h2>Reze</h2>
+    <p class="jp">レゼ</p>
+    <p class="status" data-status>Here with you</p>
+    <button class="link" data-setimg="reze">Change image</button> <button class="link" data-testvoice="reze">Test voice</button>
+  </div>
+
+  <div class="log" data-log="reze"></div>
+
+  <form class="composer" data-composer="reze" autocomplete="off">
+    <button type="button" class="ic" data-voice title="Voice replies on/off" aria-label="Toggle voice replies">♪</button>
+    <input type="text" placeholder="Message Reze..." aria-label="Message Reze">
+    <button type="button" class="ic" data-mic title="Speak" aria-label="Speak">●</button>
+    <button type="submit" class="ic go" aria-label="Send">➤</button>
+  </form>
+  <p class="foot-note">Good conversations can be dangerous.</p>
+</section>
+
+<!-- ALFRED -->
+<section id="alfred" class="view" hidden>
+  <header class="bar">
+    <button class="back" data-go="hub">‹ Hub</button>
+    <span class="mark">ALFRED OS <em>Liquid Glass</em></span>
+    <span class="pill" data-engine title="Click to switch engine"><i></i><b>checking</b></span>
+    <button class="gear" data-open-settings aria-label="Settings">&#9881;</button>
+    <span class="clock" data-clock></span>
+  </header>
+
+  <div class="a-grid">
+    <aside class="side glass">
+      <div class="side-block"><h3>Session</h3><p data-count>0 messages</p><button class="link" data-reset="alfred">Clear session</button><br><button class="link" data-setimg="alfred">Change logo image</button><br><button class="link" data-testvoice="alfred">Test voice</button></div>
+      <div class="side-block"><h3>Recent tools run</h3><ul data-tools><li class="dim">Nothing launched yet</li></ul></div>
+      <div class="side-block"><h3>Live speech</h3><p data-live class="dim">Mic is idle</p></div>
+      <blockquote>“Master Bruce, I’m here.”<cite>— Alfred</cite></blockquote>
+    </aside>
+
+    <div class="a-stage">
+      <div class="reticle" data-img="alfred">
+        <span class="sweep"></span><span class="ticks"></span>
+        <svg class="emblem big"><use href="#wing"/></svg>
+      </div>
+      <h2>Alfred</h2>
+      <p class="tag">Your assistant. Always.</p>
+      <div class="wave" data-wave></div>
+      <p class="status" data-status>Ready when you are</p>
+    </div>
+
+    <aside class="side glass log-panel">
+      <div class="log" data-log="alfred"></div>
+    </aside>
+  </div>
+
+  <form class="composer" data-composer="alfred" autocomplete="off">
+    <span class="prompt">&gt;_</span>
+    <input type="text" placeholder="Type a command or ask Alfred..." aria-label="Message Alfred">
+    <button type="button" class="ic" data-voice title="Voice replies on/off" aria-label="Toggle voice replies">♪</button>
+    <button type="button" class="ic mic" data-mic title="Speak" aria-label="Speak">●</button>
+  </form>
+</section>
+
+
+<!-- SETTINGS -->
+<div class="modal" id="settings" hidden>
+  <div class="sheet glass" role="dialog" aria-label="Settings">
+    <header><h3>Settings</h3><button class="x" data-close aria-label="Close">&times;</button></header>
+
+    <section>
+      <h4>Cloud &middot; Gemini</h4>
+      <p class="hint">Free key from Google. Paste it once; it is stored encrypted on this PC only.</p>
+      <div class="row"><input type="password" id="keyInput" placeholder="Paste Gemini API key" autocomplete="off" spellcheck="false"><button class="btn" id="keySave">Save</button></div>
+      <div class="row">
+        <select id="modelSel" aria-label="Gemini model"></select>
+        <button class="btn ghost" id="keyTest">Test</button>
+        <button class="btn ghost" id="keyClear">Remove key</button>
+      </div>
+      <p class="msgline" id="keyMsg"></p>
+      <button class="link" data-link="key">Get a free Gemini key</button>
+    </section>
+
+    <section>
+      <h4>Voices</h4>
+      <p class="hint">Neural voices (needs internet). Pick one and press Test.</p>
+      <div class="row"><label class="lab">Reze</label><select id="rezeVoice"></select><button class="btn ghost" data-vtest="reze">Test</button></div>
+      <div class="row"><label class="lab">Alfred</label><select id="alfredVoice"></select><button class="btn ghost" data-vtest="alfred">Test</button></div>
+    </section>
+
+    <section>
+      <h4>Local &middot; Ollama</h4>
+      <p class="hint" id="localHint">Runs on your PC, works offline.</p>
+      <div class="row"><select id="localSel" aria-label="Local model"></select></div>
+      <div class="row"><button class="btn" id="pullBtn">Download local model</button><button class="btn ghost" data-link="ollama">Get Ollama</button></div>
+      <div class="bar-prog" id="prog" hidden><i></i></div>
+      <p class="msgline" id="pullMsg"></p>
+    </section>
+  </div>
+</div>
+
+<input type="file" id="picker" accept="image/*" hidden>
+<script src="app.js"></script>
+</body>
+</html>

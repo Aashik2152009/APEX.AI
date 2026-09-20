@@ -1,0 +1,47 @@
+{
+  "name": "apex-ai",
+  "productName": "Apex AI",
+  "version": "1.0.0",
+  "description": "Two minds, one engine: Reze and Alfred on local Qwen or cloud Gemini.",
+  "main": "main.js",
+  "author": "Ryan",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.ryan.apexai",
+    "productName": "Apex AI",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "personas.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true
+    },
+    "artifactName": "ApexAI-Setup-${version}.${ext}"
+  },
+  "dependencies": {
+    "msedge-tts": "^2.0.0"
+  }
+}
