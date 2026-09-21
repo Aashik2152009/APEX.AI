@@ -26,6 +26,10 @@ const VOICES = {
     ['en-US-MichelleNeural|+6Hz|+2%', 'Michelle \u00b7 sweet'],
     ['ja-JP-NanamiNeural', 'Nanami \u00b7 Japanese anime'],
     ['ja-JP-NanamiNeural|+6Hz|-4%', 'Nanami \u00b7 gentle, slow'],
+    ['ja-JP-MayuNeural', 'Mayu \u00b7 Japanese anime, soft'],
+    ['ja-JP-AoiNeural', 'Aoi \u00b7 Japanese anime, bright'],
+    ['zh-CN-XiaoxiaoNeural', 'Xiaoxiao \u00b7 Chinese anime'],
+    ['ko-KR-SunHiNeural', 'SunHi \u00b7 Korean anime'],
     ['en-US-AnaNeural|+4Hz', 'Ana \u00b7 youthful'],
     ['en-GB-SoniaNeural|+6Hz', 'Sonia \u00b7 British soft'],
     ['en-US-AriaNeural', 'Aria \u00b7 natural'],
@@ -35,6 +39,9 @@ const VOICES = {
     ['en-GB-RyanNeural', 'Ryan \u00b7 British'],
     ['ja-JP-KeitaNeural', 'Keita \u00b7 Japanese anime'],
     ['ja-JP-KeitaNeural|-6Hz|+3%', 'Keita \u00b7 low, commanding'],
+    ['ja-JP-DaichiNeural', 'Daichi \u00b7 Japanese anime, deep'],
+    ['zh-CN-YunxiNeural', 'Yunxi \u00b7 Chinese anime'],
+    ['ko-KR-InJoonNeural', 'InJoon \u00b7 Korean anime'],
     ['en-GB-ThomasNeural', 'Thomas \u00b7 British'],
     ['en-US-ChristopherNeural|-4Hz', 'Christopher \u00b7 deep US'],
     ['en-US-GuyNeural', 'Guy \u00b7 US'],
@@ -229,6 +236,11 @@ async function streamChat(sender, persona, userText) {
   const msgs = hist.slice(-12);
   let raw = '';
   const onText = (t) => { raw += t; sender.send('chat:chunk', { persona, text: visible(raw) }); };
+  // Gemini selected but no key saved: switch to the local model instead of failing.
+  if (settings.engine === 'gemini' && !getKey()) {
+    const l = await localStatus();
+    if (l.online && l.modelReady) { settings.engine = 'local'; saveSettings(); }
+  }
   if (settings.engine === 'gemini') await streamGemini(p, msgs, onText);
   else await streamLocal(p, msgs, onText);
   if (!raw.trim()) throw new Error('The model sent back an empty reply. Try again.');

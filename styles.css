@@ -289,8 +289,8 @@ body[data-view="alfred"]::after{background:radial-gradient(38% 38% at 20% 30%,rg
 /* Reze doodles */
 .scribbles{position:absolute;pointer-events:none;z-index:0}
 .scribbles.chat{inset:0}
-#reze>.scribbles{position:absolute;z-index:0}
-.scribbles.hub{inset:-14px;z-index:3}
+#reze>.scribbles{position:absolute;pointer-events:none;z-index:0}
+.scribbles.hub{inset:-14px;z-index:1}
 .scribbles span{position:absolute;font-family:var(--font-hand);font-size:var(--fs);color:#d9d2ff;white-space:nowrap;transform:rotate(var(--r));
   text-shadow:0 0 14px rgba(138,107,255,.7),0 1px 0 rgba(0,0,0,.4);opacity:0;
   animation:scribble 1.5s var(--dl) cubic-bezier(.3,.7,.2,1) both,sway 8s calc(var(--dl) + 1.5s) ease-in-out infinite}
